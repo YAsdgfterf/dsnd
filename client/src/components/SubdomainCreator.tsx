@@ -182,13 +182,39 @@ const SubdomainCreator = () => {
               <div className="flex-shrink-0">
                 <CheckCircle className="h-5 w-5 text-green-400" />
               </div>
-              <div className="ml-3">
+              <div className="ml-3 w-full">
                 <h3 className="text-sm font-medium text-green-800">Success!</h3>
                 <div className="mt-2 text-sm text-green-700">
                   <p>
                     Your subdomain <span className="font-mono font-medium">{formState.subdomain}</span>.beenshub.rest has been created successfully.
                   </p>
                 </div>
+                
+                {/* DNS Records Information */}
+                <div className="mt-4 border border-green-200 rounded-md overflow-hidden">
+                  <div className="bg-green-100 px-4 py-2 text-xs font-medium text-green-800">
+                    DNS Records Created
+                  </div>
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium flex items-center">
+                        <span className="inline-block w-14">A Record:</span>
+                      </span>
+                      <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                        {formState.subdomain}.beenshub.rest
+                      </code>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium flex items-center">
+                        <span className="inline-block w-14">CNAME:</span>
+                      </span>
+                      <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                        www.{formState.subdomain}.beenshub.rest
+                      </code>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="mt-4">
                   <div className="-mx-2 -my-1.5 flex">
                     <Button
@@ -238,8 +264,22 @@ const SubdomainCreator = () => {
       <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
         <h3 className="text-sm font-medium text-slate-700">How it works</h3>
         <p className="mt-1 text-sm text-slate-600">
-          Your subdomain will point to our DNS servers. You can manage DNS records after creation.
+          When you create a subdomain, we automatically set up both A and CNAME records:
         </p>
+        <ul className="mt-2 text-xs text-slate-600 space-y-1">
+          <li className="flex items-start">
+            <span className="font-medium mr-1">•</span> 
+            <span>
+              <strong>A record</strong> (e.g., <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.rest</code>)
+            </span>
+          </li>
+          <li className="flex items-start">
+            <span className="font-medium mr-1">•</span> 
+            <span>
+              <strong>CNAME record</strong> for www (e.g., <code className="text-slate-700 bg-slate-200 px-1 rounded">www.example.beenshub.rest</code>)
+            </span>
+          </li>
+        </ul>
       </div>
     </div>
   );
