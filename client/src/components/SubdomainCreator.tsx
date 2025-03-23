@@ -310,6 +310,12 @@ const SubdomainCreator = () => {
                 <h3 className="text-sm font-medium text-rose-800">Error creating subdomain</h3>
                 <div className="mt-2 text-sm text-rose-700">
                   <p>{formState.error}</p>
+                  {formState.error?.includes('403') && (
+                    <div className="mt-2 text-xs border-t border-rose-200 pt-2">
+                      <p><strong>Possible issue:</strong> API credentials may be invalid or expired.</p>
+                      <p>Please check the Porkbun API credentials.</p>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-4">
                   <div className="-mx-2 -my-1.5 flex">

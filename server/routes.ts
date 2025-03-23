@@ -42,20 +42,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Creating a single DNS record based on the user's choice
       try {
-        // Create the requested record via Porkbun API
-        const recordResponse = await axios.post(
-          "https://porkbun.com/api/json/v3/dns/create/beenshub.rest",
-          {
-            secretapikey: secretKey,
-            apikey: apiKey,
-            name: subdomain,
-            type: recordType,
-            content: recordValue,
-            ttl: "600",
-          }
-        );
-
-        const recordData = recordResponse.data as PorkbunApiResponse;
+        // Check if we're in DEBUG mode (to bypass actual API calls)
+        const isDebugMode = process.env.DEBUG_MODE === 'true';
+        let recordData: PorkbunApiResponse;
+        
+        if (isDebugMode) {
+          console.log(`
+===========================================================
+[DEBUG MODE] 
+Creating ${recordType} record for ${subdomain}.beenshub.rest 
+Value: ${recordValue}
+===========================================================
+`);
+          // Simulate successful response
+          recordData = {
+            status: "SUCCESS"
+          };
+        } else {
+          // Make actual API call to Porkbun
+          const recordResponse = await axios.post(
+            "https://porkbun.com/api/json/v3/dns/create/beenshub.rest",
+            {
+              secretapikey: secretKey,
+              apikey: apiKey,
+              name: subdomain,
+              type: recordType,
+              content: recordValue,
+              ttl: "600",
+            }
+          );
+          
+          recordData = recordResponse.data as PorkbunApiResponse;
+        }
 
         if (recordData.status !== "SUCCESS") {
           return res.status(400).json({

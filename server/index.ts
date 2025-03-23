@@ -2,6 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Set DEBUG_MODE for development testing
+process.env.DEBUG_MODE = process.env.DEBUG_MODE || "true";
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
