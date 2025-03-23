@@ -23,19 +23,9 @@ const SubdomainCreator = () => {
   // Check if we're in debug mode
   const [isDebugMode, setIsDebugMode] = useState<boolean>(false);
 
-  // Check debug mode status on component mount
+  // Check debug mode from environment
   useEffect(() => {
-    // We'll make a simple API request to check the server's debug mode
-    fetch('/api/debug-mode')
-      .then(response => response.json())
-      .then(data => {
-        setIsDebugMode(data.debugMode === true);
-      })
-      .catch(error => {
-        // If we can't reach the endpoint, assume we're not in debug mode
-        console.error('Failed to check debug mode:', error);
-        setIsDebugMode(false);
-      });
+    setIsDebugMode(import.meta.env.VITE_DEBUG_MODE === 'true');
   }, []);
 
   // Form state
