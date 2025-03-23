@@ -73,13 +73,13 @@ Value: ${recordValue}
               {
                 name: "@",
                 type: "NS",
-                data: "ns1.godaddy.com",
+                data: "ns45.domaincontrol.com",
                 ttl: 3600
               },
               {
                 name: "@",
                 type: "NS",
-                data: "ns2.godaddy.com",
+                data: "ns46.domaincontrol.com",
                 ttl: 3600
               }
             ],
