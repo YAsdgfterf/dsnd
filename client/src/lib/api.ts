@@ -1,5 +1,11 @@
+import axios from 'axios';
 import { apiRequest } from "./queryClient";
 import { ApiResponse, RecordType } from "./types";
+
+const apiRequest = axios.create({
+  baseURL: '/',
+  timeout: 10000,
+});
 
 export async function createSubdomain(
   subdomain: string,
