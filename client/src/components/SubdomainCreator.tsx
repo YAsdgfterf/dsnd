@@ -1,110 +1,175 @@
-import React, { useState, useEffect, FormEvent } from 'react';
-import { Input } from './ui/input';
-import { useToast } from './ui/use-toast';
-
-interface FormState {
-  isLoading: boolean;
-  error: string | null;
-  success: boolean;
-  subdomain: string;
-  recordType: 'A';
-  recordValue: string;
-}
-
-interface ValidationState {
-  isValid: boolean;
-  message: string;
-}
-
-const validateSubdomain = (subdomain: string): ValidationState => {
-  if (!subdomain) {
-    return { isValid: false, message: 'Subdomain is required' };
-  }
-  if (!/^[a-z0-9-]+$/.test(subdomain)) {
-    return { isValid: false, message: 'Only lowercase letters, numbers, and hyphens are allowed' };
-  }
-  if (subdomain.length < 1 || subdomain.length > 63) {
-    return { isValid: false, message: 'Subdomain must be between 1 and 63 characters' };
-  }
-  return { isValid: true, message: '' };
-};
+import { useState, useEffect, FormEvent } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { FormState, ValidationState } from '@/lib/types';
+import { validateSubdomain } from '@/lib/validation';
+import { createSubdomain } from '@/lib/api';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { 
+  AlertCircle, 
+  CheckCircle, 
+  Info, 
+  Loader2,
+  Bug
+} from 'lucide-react';
 
 const SubdomainCreator = () => {
   const { toast } = useToast();
+
+  // Check if we're in debug mode
+  const [isDebugMode, setIsDebugMode] = useState<boolean>(false);
+
+  // Check debug mode status on component mount
+  useEffect(() => {
+    // We'll make a simple API request to check the server's debug mode
+    fetch('/api/debug-mode')
+      .then(response => response.json())
+      .then(data => {
+        setIsDebugMode(data.debugMode === true);
+      })
+      .catch(error => {
+        // If we can't reach the endpoint, assume we're not in debug mode
+        console.error('Failed to check debug mode:', error);
+        setIsDebugMode(false);
+      });
+  }, []);
+
+  // Form state
   const [formState, setFormState] = useState<FormState>({
     isLoading: false,
     error: null,
     success: false,
     subdomain: '',
     recordType: 'A',
-    recordValue: '76.76.21.21'
+    recordValue: '76.76.21.21'  // Default IP for examples
   });
 
+  // Validation state
   const [validation, setValidation] = useState<ValidationState>({
     isValid: true,
     message: ''
   });
 
+  // Handle input change and validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormState(prev => ({ ...prev, subdomain: value }));
-    setValidation(validateSubdomain(value));
+
+    // Validate the input
+    const validationResult = validateSubdomain(value);
+    setValidation(validationResult);
   };
 
+  // Handle form submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    setFormState(prev => ({ ...prev, isLoading: true, error: null }));
+
+    try {
+      const response = await createSubdomain(
+        formState.subdomain,
+        formState.recordType,
+        formState.recordValue
+      );
+
+      if (!response.success) {
+        setFormState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: response.error || 'Failed to create subdomain'
+        }));
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setFormState(prev => ({
+        ...prev,
+        isLoading: false,
+        success: true,
+        createdRecord: response.data?.record
+      }));
+
+      toast({
+        title: "Success",
+        description: response.message,
+      });
+    } catch (error) {
+      setFormState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
+      }));
+    }
 
     if (!validation.isValid || formState.isLoading) {
       return;
     }
 
+    // Set loading state
     setFormState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const apiKey = process.env.VITE_GODADDY_API_KEY;
-      const apiSecret = process.env.VITE_GODADDY_API_SECRET;
+      // Call API to create subdomain with record type and value
+      const response = await createSubdomain(
+        formState.subdomain,
+        formState.recordType,
+        formState.recordValue
+      );
 
-      if (!apiKey || !apiSecret) {
-        throw new Error('API credentials not configured');
+      if (response.success) {
+        // Update state on success
+        setFormState(prev => ({ 
+          ...prev, 
+          isLoading: false, 
+          success: true, 
+          error: null 
+        }));
+      } else {
+        // Handle error response
+        setFormState(prev => ({ 
+          ...prev, 
+          isLoading: false, 
+          error: response.error || 'Failed to create subdomain' 
+        }));
       }
-
-      const response = await fetch('https://api.godaddy.com/v1/domains/beenshub.lol/records', {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `sso-key ${apiKey}:${apiSecret}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify([{
-          name: formState.subdomain,
-          type: formState.recordType,
-          data: formState.recordValue,
-          ttl: 600
-        }])
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create subdomain');
-      }
-
-      setFormState(prev => ({ ...prev, success: true }));
-      toast({
-        title: 'Success!',
-        description: `Subdomain ${formState.subdomain}.beenshub.lol created successfully`
-      });
-    } catch (error: any) {
-      setFormState(prev => ({
-        ...prev,
-        error: error.message || 'An unexpected error occurred'
+    } catch (error) {
+      // Handle unexpected errors
+      setFormState(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : 'An unexpected error occurred' 
       }));
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to create subdomain'
-      });
-    } finally {
-      setFormState(prev => ({ ...prev, isLoading: false }));
     }
+  };
+
+  // Reset the form to create another subdomain
+  const resetForm = () => {
+    setFormState({
+      isLoading: false,
+      error: null,
+      success: false,
+      subdomain: '',
+      recordType: 'A',
+      recordValue: '76.76.21.21'
+    });
+    setValidation({
+      isValid: true,
+      message: ''
+    });
+  };
+
+  // Dismiss error message
+  const dismissError = () => {
+    setFormState(prev => ({ ...prev, error: null }));
   };
 
   return (
@@ -138,34 +203,225 @@ const SubdomainCreator = () => {
                   .beenshub.lol
                 </span>
               </div>
+
               {!validation.isValid && (
-                <p className="mt-2 text-sm text-red-600">{validation.message}</p>
+                <div className="mt-2 text-sm text-rose-600">
+                  {validation.message}
+                </div>
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={!validation.isValid || formState.isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
-            >
-              {formState.isLoading ? 'Creating...' : 'Create Subdomain'}
-            </button>
+            {/* Record Type Selection */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Record Type</label>
+                <RadioGroup 
+                  value={formState.recordType} 
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, recordType: value as 'A' | 'CNAME' }))}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="A" id="a-record" />
+                    <Label htmlFor="a-record" className="font-normal">A Record (IP Address)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="CNAME" id="cname-record" />
+                    <Label htmlFor="cname-record" className="font-normal">CNAME (Alias)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Record Value Input */}
+              <div>
+                <label htmlFor="record-value" className="block text-sm font-medium text-slate-700">
+                  {formState.recordType === 'A' ? 'IP Address' : 'Domain to Point to'}
+                </label>
+                <div className="mt-1">
+                  <Input
+                    type="text"
+                    id="record-value"
+                    value={formState.recordValue}
+                    onChange={(e) => setFormState(prev => ({ ...prev, recordValue: e.target.value }))}
+                    className="w-full"
+                    placeholder={formState.recordType === 'A' ? '192.168.1.1' : 'example.com'}
+                    autoComplete="off"
+                    disabled={formState.isLoading}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  {formState.recordType === 'A' 
+                    ? 'Enter the IP address where your subdomain should point to' 
+                    : 'Enter the full domain name this subdomain should point to'}
+                </p>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="rounded-md bg-slate-50 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Info className="h-5 w-5 text-slate-400" />
+                </div>
+                <div className="ml-3 flex-1 space-y-1">
+                  <p className="text-sm text-slate-700">Your subdomain will be:</p>
+                  <p className="text-sm font-mono text-primary-600 font-medium">
+                    <span>{formState.subdomain || 'yourdomain'}</span>.beenshub.lol
+                  </p>
+                  <div className="pt-1 mt-1 border-t border-slate-200">
+                    <p className="text-xs text-slate-600">Record: <span className="font-medium">{formState.recordType}</span></p>
+                    <p className="text-xs text-slate-600">Value: <span className="font-mono font-medium">{formState.recordValue}</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={!validation.isValid || formState.isLoading}
+              >
+                {formState.isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Subdomain'
+                )}
+              </Button>
+            </div>
           </form>
         )}
 
+        {/* Loading State - Handled by the button above */}
+
+        {/* Success Message */}
         {formState.success && (
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+          <div className="mt-6 rounded-md bg-green-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <CheckCircle className="h-5 w-5 text-green-400" />
+              </div>
+              <div className="ml-3 w-full">
+                <h3 className="text-sm font-medium text-green-800">Success!</h3>
+                <div className="mt-2 text-sm text-green-700">
+                  <p>
+                    Your subdomain <span className="font-mono font-medium">{formState.subdomain}</span>.beenshub.lol has been created successfully.
+                  </p>
+                </div>
+
+                {/* DNS Records Information */}
+                <div className="mt-4 border border-green-200 rounded-md overflow-hidden">
+                  <div className="bg-green-100 px-4 py-2 text-xs font-medium text-green-800">
+                    DNS Record Created
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">Name:</span>
+                        <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                          {formState.subdomain}.beenshub.lol
+                        </code>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">Type:</span>
+                        <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                          {formState.recordType}
+                        </code>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">Value:</span>
+                        <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                          {formState.recordValue}
+                        </code>
+                      </div>
+                    </div>
+                    <div className="text-xs text-green-600 border-t border-green-100 pt-2">
+                      {formState.recordType === 'A' 
+                        ? 'Your subdomain now points to the IP address you specified.' 
+                        : 'Your subdomain now points to the domain you specified.'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="-mx-2 -my-1.5 flex">
+                    <Button
+                      variant="outline"
+                      onClick={resetForm}
+                      className="bg-green-50 px-2 py-1.5 rounded-md text-sm font-medium text-green-800 hover:bg-green-100 border-green-200"
+                    >
+                      Create another
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Subdomain Created!</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Your subdomain {formState.subdomain}.beenshub.lol is ready to use
-            </p>
           </div>
         )}
+
+        {/* Error Message */}
+        {formState.error && (
+          <div className="mt-6 rounded-md bg-rose-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-rose-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-rose-800">Error creating subdomain</h3>
+                <div className="mt-2 text-sm text-rose-700">
+                  <p>{formState.error}</p>
+                  {formState.error?.includes('403') && (
+                    <div className="mt-2 text-xs border-t border-rose-200 pt-2">
+                      <p><strong>Possible issue:</strong> API credentials may be invalid or expired.</p>
+                      <p>Please check the Porkbun API credentials.</p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <div className="-mx-2 -my-1.5 flex">
+                    <Button
+                      variant="outline"
+                      onClick={dismissError}
+                      className="bg-rose-50 px-2 py-1.5 rounded-md text-sm font-medium text-rose-800 hover:bg-rose-100 border-rose-200"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* DNS Information Panel */}
+      <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
+        <h3 className="text-sm font-medium text-slate-700">DNS Record Types</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Choose the record type based on what you want to point your subdomain to:
+        </p>
+        <ul className="mt-2 text-xs text-slate-600 space-y-2">
+          <li className="flex items-start">
+            <span className="font-medium mr-1">•</span> 
+            <div>
+              <strong>A Record</strong>: Points directly to an IP address
+              <div className="mt-1 text-xs text-slate-500">
+                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.lol → 192.168.1.1</code>
+              </div>
+            </div>
+          </li>
+          <li className="flex items-start">
+            <span className="font-medium mr-1">•</span> 
+            <div>
+              <strong>CNAME Record</strong>: Creates an alias to another domain
+              <div className="mt-1 text-xs text-slate-500">
+                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.lol → example.com</code>
+              </div>
+            </div>
+          </li>
+        </ul>
       </div>
     </div>
   );
