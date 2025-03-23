@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { FormState, ValidationState } from '@/lib/types';
 import { validateSubdomain } from '@/lib/validation';
 import { createSubdomain } from '@/lib/api';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -21,7 +23,9 @@ const SubdomainCreator = () => {
     isLoading: false,
     error: null,
     success: false,
-    subdomain: ''
+    subdomain: '',
+    recordType: 'A',
+    recordValue: '76.76.21.21'  // Default IP for examples
   });
   
   // Validation state
@@ -87,7 +91,9 @@ const SubdomainCreator = () => {
       isLoading: false,
       error: null,
       success: false,
-      subdomain: ''
+      subdomain: '',
+      recordType: 'A',
+      recordValue: '76.76.21.21'
     });
     setValidation({
       isValid: true,

@@ -2,10 +2,16 @@ import { pgTable, text, serial, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define the record types
+export const recordTypes = ["A", "CNAME"] as const;
+export type RecordType = typeof recordTypes[number];
+
 // Define the subdomain records table
 export const subdomains = pgTable("subdomains", {
   id: serial("id").primaryKey(),
   subdomain: text("subdomain").notNull().unique(),
+  recordType: text("record_type").notNull().$type<RecordType>(),
+  recordValue: text("record_value").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -24,6 +30,8 @@ export const subdomainValidator = z.object({
 // Schema for creating new subdomains
 export const insertSubdomainSchema = createInsertSchema(subdomains).pick({
   subdomain: true,
+  recordType: true,
+  recordValue: true,
 });
 
 // Types for the subdomain record
