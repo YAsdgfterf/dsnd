@@ -15,6 +15,14 @@ export class MemStorage implements IStorage {
   constructor() {
     this.subdomains = new Map();
     this.currentId = 1;
+    
+    // Clear storage every 5 minutes in debug mode
+    if (process.env.DEBUG_MODE === 'true') {
+      setInterval(() => {
+        this.subdomains.clear();
+        this.currentId = 1;
+      }, 5 * 60 * 1000);
+    }
   }
 
   async createSubdomain(insertSubdomain: InsertSubdomain): Promise<Subdomain> {
@@ -52,6 +60,13 @@ export class MemStorage implements IStorage {
 
   async getAllSubdomains(): Promise<Subdomain[]> {
     return Array.from(this.subdomains.values());
+  }
+
+  async clearSubdomain(subdomainName: string): Promise<void> {
+    const subdomain = await this.getSubdomain(subdomainName);
+    if (subdomain) {
+      this.subdomains.delete(subdomain.id);
+    }
   }
 }
 

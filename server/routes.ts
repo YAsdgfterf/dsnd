@@ -10,7 +10,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Validate the full request data
       const validation = insertSubdomainSchema.safeParse(req.body);
-      
+
       if (!validation.success) {
         return res.status(400).json({
           success: false,
@@ -20,19 +20,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { subdomain, recordType, recordValue } = validation.data;
 
-      // Check if subdomain already exists in our storage
-      const existingSubdomain = await storage.getSubdomain(subdomain);
-      if (existingSubdomain) {
-        return res.status(409).json({
-          success: false,
-          error: `Subdomain ${subdomain} already exists`
-        } as ApiResponse);
+      // In debug mode, allow overwriting existing subdomains
+      if (process.env.DEBUG_MODE === 'true') {
+        const existing = await storage.getSubdomain(subdomain);
+        if (existing) {
+          await storage.clearSubdomain(subdomain);
+        }
+      } else {
+        // Check if subdomain already exists
+        const existingSubdomain = await storage.getSubdomain(subdomain);
+        if (existingSubdomain) {
+          return res.status(409).json({
+            success: false,
+            error: `Subdomain ${subdomain} already exists`
+          } as ApiResponse);
+        }
       }
 
       // Call Porkbun API to create the subdomain
       const apiKey = process.env.PORKBUN_API_KEY || process.env.API_KEY;
       const secretKey = process.env.PORKBUN_SECRET_KEY || process.env.SECRET_KEY;
-      
+
       if (!apiKey || !secretKey) {
         return res.status(500).json({
           success: false,
@@ -45,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if we're in DEBUG mode (to bypass actual API calls)
         const isDebugMode = process.env.DEBUG_MODE === 'true';
         let recordData: PorkbunApiResponse;
-        
+
         if (isDebugMode) {
           console.log(`
 ===========================================================
@@ -64,7 +72,7 @@ Value: ${recordValue}
           console.log("Making Porkbun API request to create DNS record:");
           console.log(`Domain: beenshub.rest, Subdomain: ${subdomain}`);
           console.log(`Record Type: ${recordType}, Value: ${recordValue}`);
-          
+
           const recordResponse = await axios.post(
             "https://api-sandbox.porkbun.com/api/json/v3/dns/create/beenshub.rest",
             {
@@ -81,7 +89,7 @@ Value: ${recordValue}
               }
             }
           );
-          
+
           recordData = recordResponse.data as PorkbunApiResponse;
         }
 
@@ -99,7 +107,7 @@ Value: ${recordValue}
           recordValue
         };
         await storage.createSubdomain(data);
-        
+
         return res.status(201).json({
           success: true,
           message: `Subdomain ${subdomain}.beenshub.rest created successfully with ${recordType} record`,
@@ -115,7 +123,7 @@ Value: ${recordValue}
       } catch (error: any) {
         // Enhanced error logging for Porkbun API errors
         console.error("Porkbun API error:", error.message);
-        
+
         if (error.response) {
           // The request was made and the server responded with a status code
           // that falls out of the range of 2xx
@@ -129,7 +137,7 @@ Value: ${recordValue}
           // Something happened in setting up the request that triggered an Error
           console.error("Request setup error:", error.message);
         }
-        
+
         return res.status(500).json({
           success: false,
           error: "Error communicating with DNS provider: " + 
@@ -138,7 +146,7 @@ Value: ${recordValue}
       }
     } catch (error: any) {
       console.error("Subdomain creation error:", error);
-      
+
       return res.status(500).json({
         success: false,
         error: error.message || "An unexpected error occurred"
@@ -150,7 +158,7 @@ Value: ${recordValue}
   app.get("/api/subdomains/:name", async (req: Request, res: Response) => {
     try {
       const subdomain = await storage.getSubdomain(req.params.name);
-      
+
       return res.json({
         success: true,
         data: { exists: !!subdomain }
