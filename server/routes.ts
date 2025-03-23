@@ -51,18 +51,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`
 ===========================================================
 [DEBUG MODE] 
-Creating ${recordType} record for ${subdomain}.beenshub.rest 
+Creating ${recordType} record for ${subdomain}.beenshub.lol 
 Value: ${recordValue}
 ===========================================================
 `);
           recordData = { success: true };
         } else {
           console.log("Making GoDaddy API request to create DNS record:");
-          console.log(`Domain: beenshub.rest, Subdomain: ${subdomain}`);
+          console.log(`Domain: beenshub.lol, Subdomain: ${subdomain}`);
           console.log(`Record Type: ${recordType}, Value: ${recordValue}`);
 
           const response = await axios.put(
-            "https://api.godaddy.com/v1/domains/beenshub.rest/records",
+            "https://api.godaddy.com/v1/domains/beenshub.lol/records",
             [{
               name: subdomain,
               type: recordType,
@@ -96,12 +96,12 @@ Value: ${recordValue}
 
         return res.status(201).json({
           success: true,
-          message: `Subdomain ${subdomain}.beenshub.rest created successfully with ${recordType} record`,
+          message: `Subdomain ${subdomain}.beenshub.lol created successfully with ${recordType} record`,
           data: { 
             subdomain,
             record: {
               type: recordType,
-              name: `${subdomain}.beenshub.rest`,
+              name: `${subdomain}.beenshub.lol`,
               value: recordValue
             }
           }

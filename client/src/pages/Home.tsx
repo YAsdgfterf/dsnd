@@ -29,7 +29,7 @@ export default function Home() {
       <footer className="bg-white border-t border-slate-200">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <p className="text-sm text-center text-slate-500">
-            Powered by <span className="font-medium text-primary-600">beenshub.rest</span> with Porkbun DNS API
+            Powered by <span className="font-medium text-primary-600">beenshub.lol</span> with Porkbun DNS API
           </p>
         </div>
       </footer>

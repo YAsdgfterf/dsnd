@@ -19,10 +19,10 @@ import {
 
 const SubdomainCreator = () => {
   const { toast } = useToast();
-  
+
   // Check if we're in debug mode
   const [isDebugMode, setIsDebugMode] = useState<boolean>(false);
-  
+
   // Check debug mode status on component mount
   useEffect(() => {
     // We'll make a simple API request to check the server's debug mode
@@ -37,7 +37,7 @@ const SubdomainCreator = () => {
         setIsDebugMode(false);
       });
   }, []);
-  
+
   // Form state
   const [formState, setFormState] = useState<FormState>({
     isLoading: false,
@@ -47,36 +47,36 @@ const SubdomainCreator = () => {
     recordType: 'A',
     recordValue: '76.76.21.21'  // Default IP for examples
   });
-  
+
   // Validation state
   const [validation, setValidation] = useState<ValidationState>({
     isValid: true,
     message: ''
   });
-  
+
   // Handle input change and validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormState(prev => ({ ...prev, subdomain: value }));
-    
+
     // Validate the input
     const validationResult = validateSubdomain(value);
     setValidation(validationResult);
   };
-  
+
   // Handle form submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     setFormState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+
     try {
       const response = await createSubdomain(
         formState.subdomain,
         formState.recordType,
         formState.recordValue
       );
-      
+
       if (!response.success) {
         setFormState(prev => ({
           ...prev,
@@ -90,14 +90,14 @@ const SubdomainCreator = () => {
         });
         return;
       }
-      
+
       setFormState(prev => ({
         ...prev,
         isLoading: false,
         success: true,
         createdRecord: response.data?.record
       }));
-      
+
       toast({
         title: "Success",
         description: response.message,
@@ -109,14 +109,14 @@ const SubdomainCreator = () => {
         error: error instanceof Error ? error.message : 'An unknown error occurred'
       }));
     }
-    
+
     if (!validation.isValid || formState.isLoading) {
       return;
     }
-    
+
     // Set loading state
     setFormState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+
     try {
       // Call API to create subdomain with record type and value
       const response = await createSubdomain(
@@ -124,7 +124,7 @@ const SubdomainCreator = () => {
         formState.recordType,
         formState.recordValue
       );
-      
+
       if (response.success) {
         // Update state on success
         setFormState(prev => ({ 
@@ -150,7 +150,7 @@ const SubdomainCreator = () => {
       }));
     }
   };
-  
+
   // Reset the form to create another subdomain
   const resetForm = () => {
     setFormState({
@@ -166,22 +166,22 @@ const SubdomainCreator = () => {
       message: ''
     });
   };
-  
+
   // Dismiss error message
   const dismissError = () => {
     setFormState(prev => ({ ...prev, error: null }));
   };
-  
+
   return (
     <div className="max-w-md w-full bg-white shadow-lg rounded-lg overflow-hidden">
       <div className="px-6 py-8">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-slate-800">Create Your Subdomain</h2>
           <p className="mt-2 text-slate-600">
-            Get your custom <span className="font-medium text-primary-600">.beenshub.rest</span> subdomain in seconds
+            Get your custom <span className="font-medium text-primary-600">.beenshub.lol</span> subdomain in seconds
           </p>
         </div>
-        
+
         {!formState.success && (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -200,17 +200,17 @@ const SubdomainCreator = () => {
                   disabled={formState.isLoading}
                 />
                 <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-slate-300 bg-slate-50 text-slate-500 text-sm font-mono">
-                  .beenshub.rest
+                  .beenshub.lol
                 </span>
               </div>
-              
+
               {!validation.isValid && (
                 <div className="mt-2 text-sm text-rose-600">
                   {validation.message}
                 </div>
               )}
             </div>
-            
+
             {/* Record Type Selection */}
             <div className="space-y-3">
               <div>
@@ -230,7 +230,7 @@ const SubdomainCreator = () => {
                   </div>
                 </RadioGroup>
               </div>
-              
+
               {/* Record Value Input */}
               <div>
                 <label htmlFor="record-value" className="block text-sm font-medium text-slate-700">
@@ -255,7 +255,7 @@ const SubdomainCreator = () => {
                 </p>
               </div>
             </div>
-            
+
             {/* Preview */}
             <div className="rounded-md bg-slate-50 p-4">
               <div className="flex">
@@ -265,7 +265,7 @@ const SubdomainCreator = () => {
                 <div className="ml-3 flex-1 space-y-1">
                   <p className="text-sm text-slate-700">Your subdomain will be:</p>
                   <p className="text-sm font-mono text-primary-600 font-medium">
-                    <span>{formState.subdomain || 'yourdomain'}</span>.beenshub.rest
+                    <span>{formState.subdomain || 'yourdomain'}</span>.beenshub.lol
                   </p>
                   <div className="pt-1 mt-1 border-t border-slate-200">
                     <p className="text-xs text-slate-600">Record: <span className="font-medium">{formState.recordType}</span></p>
@@ -274,7 +274,7 @@ const SubdomainCreator = () => {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <Button
                 type="submit"
@@ -293,9 +293,9 @@ const SubdomainCreator = () => {
             </div>
           </form>
         )}
-        
+
         {/* Loading State - Handled by the button above */}
-        
+
         {/* Success Message */}
         {formState.success && (
           <div className="mt-6 rounded-md bg-green-50 p-4">
@@ -307,10 +307,10 @@ const SubdomainCreator = () => {
                 <h3 className="text-sm font-medium text-green-800">Success!</h3>
                 <div className="mt-2 text-sm text-green-700">
                   <p>
-                    Your subdomain <span className="font-mono font-medium">{formState.subdomain}</span>.beenshub.rest has been created successfully.
+                    Your subdomain <span className="font-mono font-medium">{formState.subdomain}</span>.beenshub.lol has been created successfully.
                   </p>
                 </div>
-                
+
                 {/* DNS Records Information */}
                 <div className="mt-4 border border-green-200 rounded-md overflow-hidden">
                   <div className="bg-green-100 px-4 py-2 text-xs font-medium text-green-800">
@@ -321,7 +321,7 @@ const SubdomainCreator = () => {
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-medium">Name:</span>
                         <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
-                          {formState.subdomain}.beenshub.rest
+                          {formState.subdomain}.beenshub.lol
                         </code>
                       </div>
                       <div className="flex items-center justify-between text-xs">
@@ -344,7 +344,7 @@ const SubdomainCreator = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-4">
                   <div className="-mx-2 -my-1.5 flex">
                     <Button
@@ -360,7 +360,7 @@ const SubdomainCreator = () => {
             </div>
           </div>
         )}
-        
+
         {/* Error Message */}
         {formState.error && (
           <div className="mt-6 rounded-md bg-rose-50 p-4">
@@ -395,7 +395,7 @@ const SubdomainCreator = () => {
           </div>
         )}
       </div>
-      
+
       {/* DNS Information Panel */}
       <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
         <h3 className="text-sm font-medium text-slate-700">DNS Record Types</h3>
@@ -408,7 +408,7 @@ const SubdomainCreator = () => {
             <div>
               <strong>A Record</strong>: Points directly to an IP address
               <div className="mt-1 text-xs text-slate-500">
-                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.rest → 192.168.1.1</code>
+                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.lol → 192.168.1.1</code>
               </div>
             </div>
           </li>
@@ -417,7 +417,7 @@ const SubdomainCreator = () => {
             <div>
               <strong>CNAME Record</strong>: Creates an alias to another domain
               <div className="mt-1 text-xs text-slate-500">
-                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.rest → example.com</code>
+                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.lol → example.com</code>
               </div>
             </div>
           </li>
