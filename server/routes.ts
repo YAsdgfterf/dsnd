@@ -61,7 +61,7 @@ Value: ${recordValue}
           console.log(`Domain: beenshub.lol, Subdomain: ${subdomain}`);
           console.log(`Record Type: ${recordType}, Value: ${recordValue}`);
 
-          const response = await axios.put(
+          const response = await axios.patch(
             "https://api.godaddy.com/v1/domains/beenshub.lol/records",
             [
               {
@@ -69,18 +69,6 @@ Value: ${recordValue}
                 type: recordType,
                 data: recordValue,
                 ttl: 600
-              },
-              {
-                name: "@",
-                type: "NS",
-                data: "ns73.domaincontrol.com",
-                ttl: 3600
-              },
-              {
-                name: "@",
-                type: "NS",
-                data: "ns74.domaincontrol.com",
-                ttl: 3600
               }
             ],
             {
