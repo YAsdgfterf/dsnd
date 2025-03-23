@@ -3,7 +3,7 @@ import { ApiResponse, RecordType } from "./types";
 import axios from 'axios';
 import type { InsertSubdomain } from '@shared/schema';
 
-const API_ENDPOINT = 'https://api.beenshub.lol';
+const API_ENDPOINT = 'http://0.0.0.0:5000';
 
 // Client-side validation of record values
 const validateRecordValue = (recordType: RecordType, recordValue: string): string | null => {
