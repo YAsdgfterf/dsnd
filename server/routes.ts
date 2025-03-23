@@ -1,15 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { ApiResponse, PorkbunApiResponse, subdomainValidator } from "@shared/schema";
+import { ApiResponse, InsertSubdomain, PorkbunApiResponse, RecordType, insertSubdomainSchema, subdomainValidator } from "@shared/schema";
 import axios from "axios";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes for subdomain management
   app.post("/api/subdomains", async (req: Request, res: Response) => {
     try {
-      // Validate the subdomain format
-      const validation = subdomainValidator.safeParse(req.body);
+      // Validate the full request data
+      const validation = insertSubdomainSchema.safeParse(req.body);
       
       if (!validation.success) {
         return res.status(400).json({
@@ -18,7 +18,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } as ApiResponse);
       }
 
-      const { subdomain } = validation.data;
+      const { subdomain, recordType, recordValue } = validation.data;
 
       // Check if subdomain already exists in our storage
       const existingSubdomain = await storage.getSubdomain(subdomain);
@@ -40,66 +40,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } as ApiResponse);
       }
 
-      // Creating A and CNAME DNS records for the subdomain
+      // Creating a single DNS record based on the user's choice
       try {
-        // Create the A record via Porkbun API
-        const aRecordResponse = await axios.post(
+        // Create the requested record via Porkbun API
+        const recordResponse = await axios.post(
           "https://porkbun.com/api/json/v3/dns/create/beenshub.rest",
           {
             secretapikey: secretKey,
             apikey: apiKey,
             name: subdomain,
-            type: "A",
-            content: "76.76.21.21", // Default IP address
+            type: recordType,
+            content: recordValue,
             ttl: "600",
           }
         );
 
-        const aRecordData = aRecordResponse.data as PorkbunApiResponse;
+        const recordData = recordResponse.data as PorkbunApiResponse;
 
-        if (aRecordData.status !== "SUCCESS") {
+        if (recordData.status !== "SUCCESS") {
           return res.status(400).json({
             success: false,
-            error: aRecordData.message || "Failed to create A record at Porkbun"
+            error: recordData.message || `Failed to create ${recordType} record at Porkbun`
           } as ApiResponse);
         }
 
-        // Create the CNAME record via Porkbun API
-        const cnameRecordResponse = await axios.post(
-          "https://porkbun.com/api/json/v3/dns/create/beenshub.rest",
-          {
-            secretapikey: secretKey,
-            apikey: apiKey,
-            name: `www.${subdomain}`,
-            type: "CNAME",
-            content: `${subdomain}.beenshub.rest`,
-            ttl: "600",
-          }
-        );
-
-        const cnameRecordData = cnameRecordResponse.data as PorkbunApiResponse;
-
-        if (cnameRecordData.status === "SUCCESS") {
-          // Save the subdomain to our storage if both records were created successfully
-          await storage.createSubdomain({ subdomain });
-          
-          return res.status(201).json({
-            success: true,
-            message: `Subdomain ${subdomain}.beenshub.rest created successfully with A and CNAME records`,
-            data: { 
-              subdomain,
-              records: {
-                a: `${subdomain}.beenshub.rest`,
-                cname: `www.${subdomain}.beenshub.rest`
-              }
+        // Save the subdomain to our storage
+        const data: InsertSubdomain = {
+          subdomain,
+          recordType: recordType as RecordType,
+          recordValue
+        };
+        await storage.createSubdomain(data);
+        
+        return res.status(201).json({
+          success: true,
+          message: `Subdomain ${subdomain}.beenshub.rest created successfully with ${recordType} record`,
+          data: { 
+            subdomain,
+            record: {
+              type: recordType,
+              name: `${subdomain}.beenshub.rest`,
+              value: recordValue
             }
-          } as ApiResponse);
-        } else {
-          return res.status(400).json({
-            success: false,
-            error: cnameRecordData.message || "Failed to create CNAME record at Porkbun"
-          } as ApiResponse);
-        }
+          }
+        } as ApiResponse);
       } catch (error: any) {
         console.error("Porkbun API error:", error.response?.data || error.message);
         
