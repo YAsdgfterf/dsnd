@@ -1,16 +1,12 @@
 import { apiRequest } from "./queryClient";
 import { ApiResponse, RecordType } from "./types";
-import axios from 'axios';
-import type { InsertSubdomain } from '@shared/schema';
-
-const API_ENDPOINT = 'http://0.0.0.0:5000';
 
 // Client-side validation of record values
 const validateRecordValue = (recordType: RecordType, recordValue: string): string | null => {
   if (!recordValue) {
     return `Record value is required for ${recordType} record`;
   }
-
+  
   if (recordType === 'A') {
     // Simple IP validation
     const ipPattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -24,30 +20,52 @@ const validateRecordValue = (recordType: RecordType, recordValue: string): strin
       return "Invalid domain format. Please use format like example.com";
     }
   }
-
+  
   return null; // No validation errors
 };
 
 // Create a subdomain with the Porkbun API
 export async function createSubdomain(
   subdomain: string,
-  recordType: 'A' | 'CNAME',
+  recordType: RecordType,
   recordValue: string
 ): Promise<ApiResponse> {
   try {
-    const response = await axios.post(`${API_ENDPOINT}/subdomains`, {
+    // Perform client-side validation first
+    if (!subdomain || subdomain.length < 3) {
+      return {
+        success: false,
+        error: "Subdomain must be at least 3 characters long"
+      };
+    }
+    
+    const validationError = validateRecordValue(recordType, recordValue);
+    if (validationError) {
+      return {
+        success: false,
+        error: validationError
+      };
+    }
+    
+    // Send request to server API
+    const response = await apiRequest("POST", "/api/subdomains", { 
       subdomain,
       recordType,
       recordValue
     });
-    return response.data;
-  } catch (error: any) {
-    if (error.response?.data) {
-      return error.response.data;
+    
+    const data: ApiResponse = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
     return {
       success: false,
-      error: error.message || 'Failed to create subdomain'
+      error: "An unknown error occurred"
     };
   }
 }
