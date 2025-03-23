@@ -1,6 +1,6 @@
+
 import axios from 'axios';
-import { apiRequest } from "./queryClient";
-import { ApiResponse, RecordType } from "./types";
+import { ApiResponse } from "./types";
 
 const apiRequest = axios.create({
   baseURL: '/',
