@@ -60,15 +60,25 @@ Value: ${recordValue}
           };
         } else {
           // Make actual API call to Porkbun
+          // Log request for debugging
+          console.log("Making Porkbun API request to create DNS record:");
+          console.log(`Domain: beenshub.rest, Subdomain: ${subdomain}`);
+          console.log(`Record Type: ${recordType}, Value: ${recordValue}`);
+          
           const recordResponse = await axios.post(
-            "https://porkbun.com/api/json/v3/dns/create/beenshub.rest",
+            "https://api-sandbox.porkbun.com/api/json/v3/dns/create/beenshub.rest",
             {
-              secretapikey: secretKey,
               apikey: apiKey,
+              secretapikey: secretKey,
               name: subdomain,
               type: recordType,
               content: recordValue,
               ttl: "600",
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json'
+              }
             }
           );
           
@@ -103,11 +113,27 @@ Value: ${recordValue}
           }
         } as ApiResponse);
       } catch (error: any) {
-        console.error("Porkbun API error:", error.response?.data || error.message);
+        // Enhanced error logging for Porkbun API errors
+        console.error("Porkbun API error:", error.message);
+        
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          console.error("Response data:", error.response.data);
+          console.error("Response status:", error.response.status);
+          console.error("Response headers:", error.response.headers);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("No response received:", error.request);
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.error("Request setup error:", error.message);
+        }
         
         return res.status(500).json({
           success: false,
-          error: "Error communicating with DNS provider: " + (error.response?.data?.message || error.message)
+          error: "Error communicating with DNS provider: " + 
+                 (error.response?.data?.message || error.message)
         } as ApiResponse);
       }
     } catch (error: any) {

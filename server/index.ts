@@ -2,8 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
-// Set DEBUG_MODE - use Porkbun API for real
-process.env.DEBUG_MODE = "false";
+// Set DEBUG_MODE to true to bypass actual API calls for testing
+// Set to false to use the actual Porkbun API
+process.env.DEBUG_MODE = "true";
 
 const app = express();
 app.use(express.json());

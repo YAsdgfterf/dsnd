@@ -8,11 +8,13 @@ import { validateSubdomain } from '@/lib/validation';
 import { createSubdomain } from '@/lib/api';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { 
   AlertCircle, 
   CheckCircle, 
   Info, 
-  Loader2 
+  Loader2,
+  Bug
 } from 'lucide-react';
 
 const SubdomainCreator = () => {
