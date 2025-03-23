@@ -1,4 +1,4 @@
-import { subdomains, type Subdomain, type InsertSubdomain } from "@shared/schema";
+import { subdomains, type RecordType, type Subdomain, type InsertSubdomain } from "@shared/schema";
 
 // Interface for the storage methods
 export interface IStorage {
@@ -25,11 +25,21 @@ export class MemStorage implements IStorage {
     }
 
     const id = this.currentId++;
+    
+    // Ensure recordType is properly cast to RecordType
+    const recordType = insertSubdomain.recordType as RecordType;
+    if (recordType !== 'A' && recordType !== 'CNAME') {
+      throw new Error(`Invalid record type: ${recordType}. Must be A or CNAME.`);
+    }
+    
     const subdomain: Subdomain = {
-      ...insertSubdomain,
       id,
+      subdomain: insertSubdomain.subdomain,
+      recordType,
+      recordValue: insertSubdomain.recordValue,
       createdAt: new Date(),
     };
+    
     this.subdomains.set(id, subdomain);
     return subdomain;
   }

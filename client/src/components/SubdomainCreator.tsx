@@ -56,8 +56,12 @@ const SubdomainCreator = () => {
     setFormState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      // Call API to create subdomain
-      const response = await createSubdomain(formState.subdomain);
+      // Call API to create subdomain with record type and value
+      const response = await createSubdomain(
+        formState.subdomain,
+        formState.recordType,
+        formState.recordValue
+      );
       
       if (response.success) {
         // Update state on success
@@ -145,17 +149,66 @@ const SubdomainCreator = () => {
               )}
             </div>
             
+            {/* Record Type Selection */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Record Type</label>
+                <RadioGroup 
+                  value={formState.recordType} 
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, recordType: value as 'A' | 'CNAME' }))}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="A" id="a-record" />
+                    <Label htmlFor="a-record" className="font-normal">A Record (IP Address)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="CNAME" id="cname-record" />
+                    <Label htmlFor="cname-record" className="font-normal">CNAME (Alias)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              {/* Record Value Input */}
+              <div>
+                <label htmlFor="record-value" className="block text-sm font-medium text-slate-700">
+                  {formState.recordType === 'A' ? 'IP Address' : 'Domain to Point to'}
+                </label>
+                <div className="mt-1">
+                  <Input
+                    type="text"
+                    id="record-value"
+                    value={formState.recordValue}
+                    onChange={(e) => setFormState(prev => ({ ...prev, recordValue: e.target.value }))}
+                    className="w-full"
+                    placeholder={formState.recordType === 'A' ? '192.168.1.1' : 'example.com'}
+                    autoComplete="off"
+                    disabled={formState.isLoading}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  {formState.recordType === 'A' 
+                    ? 'Enter the IP address where your subdomain should point to' 
+                    : 'Enter the full domain name this subdomain should point to'}
+                </p>
+              </div>
+            </div>
+            
             {/* Preview */}
             <div className="rounded-md bg-slate-50 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <Info className="h-5 w-5 text-slate-400" />
                 </div>
-                <div className="ml-3 flex-1 md:flex md:justify-between">
-                  <p className="text-sm text-slate-700">Your full domain will be</p>
-                  <p className="mt-1 text-sm font-mono md:mt-0 md:ml-6 text-primary-600 font-medium">
+                <div className="ml-3 flex-1 space-y-1">
+                  <p className="text-sm text-slate-700">Your subdomain will be:</p>
+                  <p className="text-sm font-mono text-primary-600 font-medium">
                     <span>{formState.subdomain || 'yourdomain'}</span>.beenshub.rest
                   </p>
+                  <div className="pt-1 mt-1 border-t border-slate-200">
+                    <p className="text-xs text-slate-600">Record: <span className="font-medium">{formState.recordType}</span></p>
+                    <p className="text-xs text-slate-600">Value: <span className="font-mono font-medium">{formState.recordValue}</span></p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -199,24 +252,33 @@ const SubdomainCreator = () => {
                 {/* DNS Records Information */}
                 <div className="mt-4 border border-green-200 rounded-md overflow-hidden">
                   <div className="bg-green-100 px-4 py-2 text-xs font-medium text-green-800">
-                    DNS Records Created
+                    DNS Record Created
                   </div>
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium flex items-center">
-                        <span className="inline-block w-14">A Record:</span>
-                      </span>
-                      <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
-                        {formState.subdomain}.beenshub.rest
-                      </code>
+                  <div className="p-4 space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">Name:</span>
+                        <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                          {formState.subdomain}.beenshub.rest
+                        </code>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">Type:</span>
+                        <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                          {formState.recordType}
+                        </code>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">Value:</span>
+                        <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
+                          {formState.recordValue}
+                        </code>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium flex items-center">
-                        <span className="inline-block w-14">CNAME:</span>
-                      </span>
-                      <code className="bg-white px-2 py-1 rounded text-green-700 font-mono">
-                        www.{formState.subdomain}.beenshub.rest
-                      </code>
+                    <div className="text-xs text-green-600 border-t border-green-100 pt-2">
+                      {formState.recordType === 'A' 
+                        ? 'Your subdomain now points to the IP address you specified.' 
+                        : 'Your subdomain now points to the domain you specified.'}
                     </div>
                   </div>
                 </div>
@@ -268,22 +330,28 @@ const SubdomainCreator = () => {
       
       {/* DNS Information Panel */}
       <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
-        <h3 className="text-sm font-medium text-slate-700">How it works</h3>
+        <h3 className="text-sm font-medium text-slate-700">DNS Record Types</h3>
         <p className="mt-1 text-sm text-slate-600">
-          When you create a subdomain, we automatically set up both A and CNAME records:
+          Choose the record type based on what you want to point your subdomain to:
         </p>
-        <ul className="mt-2 text-xs text-slate-600 space-y-1">
+        <ul className="mt-2 text-xs text-slate-600 space-y-2">
           <li className="flex items-start">
             <span className="font-medium mr-1">•</span> 
-            <span>
-              <strong>A record</strong> (e.g., <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.rest</code>)
-            </span>
+            <div>
+              <strong>A Record</strong>: Points directly to an IP address
+              <div className="mt-1 text-xs text-slate-500">
+                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.rest → 192.168.1.1</code>
+              </div>
+            </div>
           </li>
           <li className="flex items-start">
             <span className="font-medium mr-1">•</span> 
-            <span>
-              <strong>CNAME record</strong> for www (e.g., <code className="text-slate-700 bg-slate-200 px-1 rounded">www.example.beenshub.rest</code>)
-            </span>
+            <div>
+              <strong>CNAME Record</strong>: Creates an alias to another domain
+              <div className="mt-1 text-xs text-slate-500">
+                Example: <code className="text-slate-700 bg-slate-200 px-1 rounded">example.beenshub.rest → example.com</code>
+              </div>
+            </div>
           </li>
         </ul>
       </div>

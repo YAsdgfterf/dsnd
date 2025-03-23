@@ -1,9 +1,17 @@
 import { apiRequest } from "./queryClient";
-import { ApiResponse } from "./types";
+import { ApiResponse, RecordType } from "./types";
 
-export async function createSubdomain(subdomain: string): Promise<ApiResponse> {
+export async function createSubdomain(
+  subdomain: string,
+  recordType: RecordType,
+  recordValue: string
+): Promise<ApiResponse> {
   try {
-    const response = await apiRequest("POST", "/api/subdomains", { subdomain });
+    const response = await apiRequest("POST", "/api/subdomains", { 
+      subdomain,
+      recordType,
+      recordValue
+    });
     const data: ApiResponse = await response.json();
     return data;
   } catch (error) {
