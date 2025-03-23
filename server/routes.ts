@@ -63,12 +63,26 @@ Value: ${recordValue}
 
           const response = await axios.put(
             "https://api.godaddy.com/v1/domains/beenshub.lol/records",
-            [{
-              name: subdomain,
-              type: recordType,
-              data: recordValue,
-              ttl: 600
-            }],
+            [
+              {
+                name: subdomain,
+                type: recordType,
+                data: recordValue,
+                ttl: 600
+              },
+              {
+                name: "@",
+                type: "NS",
+                data: "ns1.godaddy.com",
+                ttl: 3600
+              },
+              {
+                name: "@",
+                type: "NS",
+                data: "ns2.godaddy.com",
+                ttl: 3600
+              }
+            ],
             {
               headers: {
                 'Authorization': `sso-key ${apiKey}:${apiSecret}`,
