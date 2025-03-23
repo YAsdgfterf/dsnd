@@ -68,6 +68,48 @@ const SubdomainCreator = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
+    setFormState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      const response = await createSubdomain(
+        formState.subdomain,
+        formState.recordType,
+        formState.recordValue
+      );
+      
+      if (!response.success) {
+        setFormState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: response.error || 'Failed to create subdomain'
+        }));
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setFormState(prev => ({
+        ...prev,
+        isLoading: false,
+        success: true,
+        createdRecord: response.data?.record
+      }));
+      
+      toast({
+        title: "Success",
+        description: response.message,
+      });
+    } catch (error) {
+      setFormState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
+      }));
+    }
+    
     if (!validation.isValid || formState.isLoading) {
       return;
     }
