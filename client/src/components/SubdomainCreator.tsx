@@ -20,6 +20,24 @@ import {
 const SubdomainCreator = () => {
   const { toast } = useToast();
   
+  // Check if we're in debug mode
+  const [isDebugMode, setIsDebugMode] = useState<boolean>(false);
+  
+  // Check debug mode status on component mount
+  useEffect(() => {
+    // We'll make a simple API request to check the server's debug mode
+    fetch('/api/debug-mode')
+      .then(response => response.json())
+      .then(data => {
+        setIsDebugMode(data.debugMode === true);
+      })
+      .catch(error => {
+        // If we can't reach the endpoint, assume we're not in debug mode
+        console.error('Failed to check debug mode:', error);
+        setIsDebugMode(false);
+      });
+  }, []);
+  
   // Form state
   const [formState, setFormState] = useState<FormState>({
     isLoading: false,
