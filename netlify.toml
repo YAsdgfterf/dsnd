@@ -1,6 +1,7 @@
+
 [build]
   functions = "functions"
-  publish = "public"
+  publish = "dist/public"
 
 [[redirects]]
   from = "/api/*"
